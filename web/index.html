@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>大肥鱼 · 直播中继</title>
+<link rel="stylesheet" href="/style.css">
+</head>
+<body>
+<div class="app">
+
+  <header class="topbar">
+    <div class="brand">
+      <span class="dot"></span>
+      <span class="title">大肥鱼直播中继</span>
+      <span class="tag">本地模拟</span>
+    </div>
+    <div class="meta">
+      <span class="status" id="status">待机</span>
+      <select class="voice" id="voice" title="音色"></select>
+      <button class="ghost" id="sound">声音 开</button>
+      <button class="ghost" id="reset">清空上下文</button>
+    </div>
+  </header>
+
+  <main class="stage">
+
+    <section class="screen">
+      <div class="viewport">
+        <div class="live-badge"><span></span>LIVE</div>
+        <div class="avatar">大肥鱼</div>
+        <div class="caption" id="caption">等你说句话</div>
+      </div>
+
+      <div class="stats">
+        <div class="stat"><span>首字</span><b id="stat-first">—</b></div>
+        <div class="stat"><span>总耗时</span><b id="stat-total">—</b></div>
+        <div class="stat"><span>起播</span><b id="stat-audio">—</b></div>
+        <div class="stat"><span>轮次</span><b id="stat-round">0</b></div>
+        <div class="stat"><span>字数</span><b id="stat-chars">0</b></div>
+      </div>
+    </section>
+
+    <section class="feed">
+      <div class="feed-head">
+        <span>互动消息</span>
+        <span class="feed-hint">观众弹幕 · AI 回复</span>
+      </div>
+      <div class="feed-list" id="feed">
+        <div class="empty" id="empty">还没有消息。在下面输入一条弹幕试试。</div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="composer">
+    <div class="quick" id="quick"></div>
+    <div class="input-row">
+      <input id="input" type="text" autocomplete="off" spellcheck="false"
+             placeholder="模拟一条观众弹幕，回车发送…">
+      <button id="send">发送</button>
+    </div>
+  </footer>
+
+</div>
+<script src="/app.js"></script>
+</body>
+</html>
