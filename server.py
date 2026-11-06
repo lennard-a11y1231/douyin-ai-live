@@ -24,9 +24,20 @@ from brain.persona import load_persona
 from brain.replier import ROOT, DeepSeek, DeepSeekError, StyleSplitter, format_reply
 
 WEB_DIR = os.path.join(ROOT, "web")
-HOST = "127.0.0.1"
-PORT = 8765
 MAX_HISTORY = 20
+
+
+def _env_int(name, default):
+    try:
+        return int(os.environ.get(name, default))
+    except (TypeError, ValueError):
+        return default
+
+
+# 默认只绑本机：本地预览、SSH 隧道都够用，也不会把接口暴露到公网。
+# 部署到服务器且确实要公网直连时，才设 LIVE_HOST=0.0.0.0。
+HOST = (os.environ.get("LIVE_HOST") or "127.0.0.1").strip()
+PORT = _env_int("LIVE_PORT", 8765)
 
 STATIC_FILES = {
     "/": ("index.html", "text/html; charset=utf-8"),
@@ -352,7 +363,10 @@ def main():
           % (voice.default_preset(), engine,
              "就绪" if warmed_say else "不可用",
              "已预热" if warmed_conn else "未建立"))
-    print("  在浏览器打开 http://%s:%d" % (HOST, PORT))
+    shown = "127.0.0.1" if HOST in ("0.0.0.0", "") else HOST
+    print("  在浏览器打开 http://%s:%d" % (shown, PORT))
+    if HOST == "0.0.0.0":
+        print("  注意：已监听全部网卡，接口没有鉴权，别把端口裸在公网上")
     print("  按 Ctrl-C 停止")
     try:
         server.serve_forever()

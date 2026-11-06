@@ -1,0 +1,28 @@
+[Unit]
+Description=Douyin AI Live Relay
+Documentation=https://github.com/CHANGE_ME
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+# 建议用专用普通账号，不要用 root 跑
+User=fish
+Group=fish
+WorkingDirectory=/opt/douyin-ai-live
+# .env 里放 DEEPSEEK_* / MIMO_* / VOICE_PRESET，也可追加 LIVE_HOST / LIVE_PORT
+EnvironmentFile=/opt/douyin-ai-live/.env
+ExecStart=/usr/bin/python3 /opt/douyin-ai-live/server.py
+Restart=always
+RestartSec=3
+# 流式接口是长连接，别让 systemd 过早判定失败
+TimeoutStopSec=10
+KillSignal=SIGTERM
+StandardOutput=journal
+StandardError=journal
+
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
