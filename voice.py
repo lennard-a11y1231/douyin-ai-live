@@ -3,9 +3,10 @@
 
 两个引擎，页面上可以随时切换：
 
-  mimo  —— 小米 MiMo-V2.5-TTS。音色自然，官方已支持低延迟流式（pcm16 分块返回）。
-           但每次请求有 2.5~3 秒的固定前置开销，且要复用 HTTPS 连接才划算
+  mimo  —— 小米 MiMo-V2.5-TTS。音色自然，支持语气指示（能让同一句话说成暴躁或虚弱）。
+           每次请求有 2~3 秒的固定前置开销，且要复用 HTTPS 连接才划算
            （小米域名 TLS 握手要 0.8 秒，每次重连等于白扔近 1 秒）。
+           接口有流式模式，但它会丢掉语气指示，所以这里默认不用，见下方 PRESETS 注释。
   say   —— macOS 自带语音。0.5 秒出音，音色机械，用来兜底和快速预览。
 
 mimo 失败、超时、没配 key 时自动降级到 say，直播间不会因为一次网络抖动就哑掉。
@@ -39,19 +40,25 @@ FISH_STYLE = (
 )
 
 # engine 决定后端；segment 决定前端要不要按句切开合成。
-#   segment=True  —— 系统语音固定开销小，切得越细越早出声
-#   segment=False —— MiMo 前置开销大，整段一次合成更连贯也更省
-#   stream=True   —— 走流式，边生成边播，长句子能省几秒
+#   segment=True  —— 按句切开，每句一次请求，可并发、可缓存
+#   segment=False —— 整段一次合成，更连贯但首句要等全文生成完
+#   stream=True   —— 走流式，边生成边播
+#
+# 注意：MiMo 的流式模式会**忽略语气指示**（user 里的自然语言和 (标签) 都不生效），
+# 同一句话用「极快·几乎在喊」和「极慢·有气无力」合成的时长、基频几乎一致。
+# 非流式下两者差 2.7 倍（2.08s vs 5.60s，基频 212Hz vs 109Hz），情绪才真进得去。
+# 而短句的非流式耗时（约 2.2~2.8s）和流式首包（约 2.5s）基本持平，
+# 所以 MiMo 一律走「分句 + 非流式」：语气落地，延迟不亏，还能命中缓存。
 PRESETS = OrderedDict(
     [
         ("mimo_soda", {"label": "苏打 · MiMo 男声", "engine": "mimo", "voice": "苏打", "style": FISH_STYLE,
-                       "segment": False, "stream": True}),
+                       "segment": True, "stream": False}),
         ("mimo_ice", {"label": "冰糖 · MiMo 女声", "engine": "mimo", "voice": "冰糖", "style": FISH_STYLE,
-                      "segment": False, "stream": True}),
+                      "segment": True, "stream": False}),
         ("mimo_jasmine", {"label": "茉莉 · MiMo 女声", "engine": "mimo", "voice": "茉莉", "style": FISH_STYLE,
-                          "segment": False, "stream": True}),
+                          "segment": True, "stream": False}),
         ("mimo_birch", {"label": "白桦 · MiMo 男声", "engine": "mimo", "voice": "白桦", "style": FISH_STYLE,
-                        "segment": False, "stream": True}),
+                        "segment": True, "stream": False}),
         ("tingting", {"label": "婷婷 · 系统（秒出）", "engine": "say", "voice": "Tingting", "rate": 195,
                       "segment": True, "stream": False}),
         ("flo", {"label": "Flo · 系统", "engine": "say", "voice": "Flo (Chinese (China mainland))",
@@ -224,6 +231,10 @@ def _synth_mimo(text, preset, style=None):
 
 def stream_pcm(text, name=None, style=None):
     """流式合成，逐块 yield 24kHz 单声道 PCM16。供前端边收边播。
+
+    **不要用它做直播主链路**：实测 MiMo 流式模式会忽略 style，
+    同一句话换任何语气指示，时长和基频都不变，听起来就是念课文。
+    保留这个函数只是为了做实验对比。
 
     出错时抛 VoiceError，但**只在第一个字节之前**才有意义——
     已经开始往外吐音频后再失败，调用方只能把这一句截断。

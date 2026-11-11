@@ -98,7 +98,7 @@ class StyleSplitter:
 
     def _close(self, style: str, rest: str) -> str:
         """定下语气，返回正文开头（闭合标记后的换行要去掉）。"""
-        self.style = _strip_marks(style).strip()
+        self.style = _clean_style(style)
         self._closed = True
         self._pending = ""
         trimmed = rest.lstrip("\r\n \t\u3000")
@@ -139,6 +139,21 @@ class StyleSplitter:
 def _strip_marks(text: str) -> str:
     for mark in _OPENERS + _CLOSERS:
         text = text.replace(mark, "")
+    return text
+
+
+def _clean_style(text: str) -> str:
+    """语气指示的收尾清理。
+
+    模型偶尔用单个 `]` 收尾（写成 `[语气]…无所谓]` 而不是 `[/语气]`），
+    那个落单的括号会跟着一起送进语音合成，念出来就是一张多余的嘴。
+    只在首尾各削一层括号，中间的内容一个字都不动。
+    """
+    text = _strip_marks(text).strip()
+    while text and text[0] in "[【":
+        text = text[1:].lstrip()
+    while text and text[-1] in "]】":
+        text = text[:-1].rstrip()
     return text
 
 
